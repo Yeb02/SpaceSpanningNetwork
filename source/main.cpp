@@ -27,31 +27,24 @@ int main()
 
     int nSpecimens = 128; //16 -> 512 in most cases
     int nSteps = 10000;
-    const int IN_SIZE = 10;
-    const int OUT_SIZE = 50;
+    const int IN_SIZE = 5;
+    const int OUT_SIZE = 25;
 
     PopulationEvolutionParameters params;
-    params.selectionPressure = { -2.0f, .3f}; 
-    params.useSameTrialInit = false; 
-    params.rankingFitness = true;
-    params.saturationFactor = .08f;
-    params.regularizationFactor = .03f; 
-    params.competitionFactor = .0f; 
-    params.scoreBatchTransformation = NONE; // NONE recommended when useSameTrialInit = false
-    params.nParents = 1;
+    params.selectionPressure = { -3.0f, .2f}; 
+    params.nParents = 50;
 
     Population population(IN_SIZE, OUT_SIZE, nSpecimens);
     population.setEvolutionParameters(params); 
 
+    population.test();
 
-
-    
     for (int i = 0; i < nSteps; i++) {
 
-        float c = std::max(.0F, 1.0f - (float)i / 20.0f);
-        params.selectionPressure.first = (1.0f - c) * (1.5f * sinf((float)i / 3.0f) - 1.5f) + c * -1.0f;
-        LOG("Pressure was : " << params.selectionPressure.first);
-        population.setEvolutionParameters(params); // parameters can be changed at each step.
+        //float c = std::max(.0F, 1.0f - (float)i / 20.0f);
+        //params.selectionPressure.first = (1.0f - c) * (1.5f * sinf((float)i / 3.0f) - 1.5f) + c * -1.0f;
+        //LOG("Pressure was : " << params.selectionPressure.first);
+        //population.setEvolutionParameters(params); // parameters can be changed at each step.
 
         population.step();
 

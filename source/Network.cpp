@@ -6,14 +6,12 @@
 Network::Network(int inputSize, int outputSize) :
 	inputSize(inputSize), outputSize(outputSize)
 {
-	nLayers = 3;
+	nLayers = 1; // 1 if no hidden
 
 	sizes.push_back(inputSize);
-	//for (int i = 0; i < nLayers - 1; i++) { // TODO
-	//	sizes.push_back(inputSize);
-	//}
-	sizes.push_back(10);
-	sizes.push_back(10);
+	for (int i = 0; i < nLayers - 1; i++) { // TODO
+		sizes.push_back(10);
+	}
 	sizes.push_back(outputSize);
 
 	// init Ws and Bs
@@ -204,29 +202,34 @@ Network::Network(Network* n) : Network(n->inputSize, n->outputSize)
 void Network::mutate()
 {
 	constexpr float f = .3f;
+	constexpr float p = .1f;
 	int nMutations;
 
 	for (int i = 0; i < nLayers; i++)
 	{ 
 		int sW = sizes[i] * sizes[i + 1];
-		SET_BINOMIAL(sW, .2f);
-		nMutations = BINOMIAL;
-		for (int j = 0; j < nMutations; j++) {
-			Ws[i][INT_0X(sW)] += f * NORMAL_01;
-		}
-		/*for (int j = 0; j < sW; j++) {
-			Ws[i][j] += f * NORMAL_01;
-		}*/
-
 		int sB = sizes[i + 1];
-		SET_BINOMIAL(sB, .2f);
+
+#ifdef SPARSE_MUT_AND_COMB
+		SET_BINOMIAL(sW, p);
 		nMutations = BINOMIAL;
 		for (int j = 0; j < nMutations; j++) {
-			Bs[i][INT_0X(sB)] += f * NORMAL_01;
+			Ws[i][INT_0X(sW)] += NORMAL_01;
 		}
-		/*for (int j = 0; j < sB; j++) {
+		SET_BINOMIAL(sB, p);
+		nMutations = BINOMIAL;
+		for (int j = 0; j < nMutations; j++) {
+			Bs[i][INT_0X(sB)] += NORMAL_01;
+		}
+#else
+		// Global
+		for (int j = 0; j < sB; j++) {
 			Bs[i][j] += f * NORMAL_01;
-		}*/
+		}
+		for (int j = 0; j < sW; j++) {
+			Ws[i][j] += f * NORMAL_01;
+		}
+#endif
 	}
 }
 
@@ -253,6 +256,7 @@ Network* Network::combine(std::vector<Network*>& parents, float* weights) {
 	};
 
 	// weights
+#ifndef SPARSE_MUT_AND_COMB
 	{
 		float s_positive = 0.0f, s_negative = 0.0f;
 		for (int j = 1; j < nParents; j++) {
@@ -270,23 +274,36 @@ Network* Network::combine(std::vector<Network*>& parents, float* weights) {
 			weights[j] *= s_f;
 		}
 	}
+#endif
+
 
 	for (int i = 0; i < child->nLayers; i++)
 	{
 		int sW = child->sizes[i] * child->sizes[i + 1];
+		int sB = child->sizes[i + 1];
+
+#ifdef SPARSE_MUT_AND_COMB
+		for (int j = 0; j < sW; j++) {
+			int pID = INT_0X(nParents);
+			child->Ws[i][j] = parents[pID]->Ws[i][j];
+		}
+		for (int j = 0; j < sB; j++) {
+			int pID = INT_0X(nParents);
+			child->Bs[i][j] = parents[pID]->Bs[i][j];
+		}
+#else
 		mats[0] = child->Ws[i].get();
 		for (int j = 1; j < nParents; j++) {
 			mats[j] = parents[j]->Ws[i].get();
 		}
 		addMatrices(sW);
 
-
-		int sB = child->sizes[i + 1];
 		mats[0] = child->Bs[i].get();
 		for (int j = 1; j < nParents; j++) {
 			mats[j] = parents[j]->Bs[i].get();
 		}
 		addMatrices(sB);
+#endif
 	}
 	
 	return child;

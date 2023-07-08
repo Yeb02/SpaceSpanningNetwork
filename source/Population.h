@@ -10,8 +10,6 @@
 #include <fstream>
 #include <chrono> // time since 1970
 
-const enum SCORE_BATCH_TRANSFORMATION { NONE = 0, NORMALIZE = 1, RANK = 2};
-
 inline int binarySearch(float* proba, float value, int size) {
 	int inf = 0;
 	int sup = size - 1;
@@ -38,14 +36,8 @@ inline int binarySearch(float* proba, float value, int size) {
 	//throw "Binary search failure !";
 }
 
-
 // Contains the parameters for population evolution. They can be changed at each step.
 struct PopulationEvolutionParameters {
-
-	// The importance of the (normalized) regularization factor relative to the score. 0 means no regularization,
-	// 1 means regularization is as important as score. Recommended value depends on the task.
-	float regularizationFactor;
-
 
 	// Both values should be < 1.0 , safe value is 0.0 .  
 	// ".first " influences the probability of each specimen to be present once in the next generation. 
@@ -53,53 +45,13 @@ struct PopulationEvolutionParameters {
 	std::pair<float, float> selectionPressure;
 
 
-	// If set to true, each trial of the vector passed to the step function will be reset to the same initial values for
-	// each specimen. This means that all specimens are evaluated on the exact same tasks.
-	bool useSameTrialInit;
-
-
-	// Experimental, default=0.0. Only used when SATURATION_PENALIZING is defined, as it slows down forward() (a bit).
-	// The higher, the stronger the penalty for saturated activations. It may be important to use it when GUIDED_MUTATIONS
-	// is defined, as with it networks are prone to oversaturation.
-	float saturationFactor;
-
-
-	// EvaluateFitness() is supposed to receive a vector of fitnesses, 1 value per specimen, more or less normally 
-	// distributed (the function handles centering and reducing). However, many trials have no such measure
-	// of the fitness : it may be exponential, or discontinuous , or ... In general, it wont be easily interpretable 
-	// for generating offsprings with the best probabilities. 
-	// And even if it were the  case, the normalizity of the fitness distribution ultimately depends on the 
-	// relative performances of the networks. This is why a ranking fitness should be used in the general case, 
-	// instead of raw trial scores. When unsure,  use rankingFitness = true.
-	bool rankingFitness;
-
-
-	// Disabled when = 0. Recommended range: [0, .3]. Useless after the maximum score has been reached.
-	// Induces a term in the fitness which compares score at this step with score of the parent on the 
-	// corresponding trial, at the previous step. (Therefore on a different random initialization.) 
-	// Makes sense to use only if trials within a step are semantically different, and the random initialization
-	// does not influence the score "too much". See note in Network.postTrialUpdate.
-	float competitionFactor;
-
-
 	// Minimum at 1. If = 1, mutated clone of the parent. No explicit maximum, but bounded by nSpecimens, 
 	// and MAX_MATING_DEPTH implicitly. Cost O( n log(n) ).
 	int nParents;
 
-	// Usually, raw scores as output from the trials are not very informative about how specimens compare. This
-	// parameter specifies a transformation of the scores of the whole population PER TRIAL. It is not redundant 
-	// with rankingFitness, it makes sense to have both enabled. 
-	SCORE_BATCH_TRANSFORMATION scoreBatchTransformation;
-
 	//defaults:
 	PopulationEvolutionParameters() {
 		selectionPressure = { -10.0f, 0.0f };
-		regularizationFactor = 0.1f;
-		useSameTrialInit = false;
-		saturationFactor = .05f;
-		rankingFitness = true;
-		competitionFactor = .1f;
-		scoreBatchTransformation = NONE;
 		nParents = 10;
 	}
 };
@@ -161,26 +113,19 @@ struct PhylogeneticNode
 class Population {
 
 public:	
-	// Not exposed to the DLL interface:
+	// testing features
+	void test();
+
 	~Population();
 
-	// Only the last nTrialsEvaluated are used for fitness calculations. Previous ones are used for lifelong learning.
 	void step();
-
 
 	Population(int IN_SIZE, int OUT_SIZE, int nSpecimens);
 
-	// nTrials is used in Network.parentData if available.
 	void createOffsprings();
 
 	void setEvolutionParameters(PopulationEvolutionParameters params) {
-		this->regularizationFactor = params.regularizationFactor;
 		this->selectionPressure = params.selectionPressure;
-		this->useSameTrialInit = params.useSameTrialInit;
-		this->saturationFactor = params.saturationFactor;
-		this->rankingFitness = params.rankingFitness;
-		this->competitionFactor = params.competitionFactor;
-		this->scoreBatchTransformation = params.scoreBatchTransformation;
 		this->nParents = params.nParents;
 
 		PhylogeneticNode::maxListSize = params.nParents;
@@ -233,16 +178,7 @@ private:
 	// EVOLUTION PARAMETERS: 
 	
 	// Set with a PopulationEvolutionParameters struct. Description in the struct definition.
-	float regularizationFactor, saturationFactor, competitionFactor;
-
-	// Set with a PopulationEvolutionParameters struct. Description in the struct definition.
 	std::pair<float, float> selectionPressure;
-
-	// Set with a PopulationEvolutionParameters struct. Description in the struct definition.
-	bool useSameTrialInit, rankingFitness;
-
-	// Set with a PopulationEvolutionParameters struct. Description in the struct definition.
-	SCORE_BATCH_TRANSFORMATION scoreBatchTransformation;
 
 	// Set with a PopulationEvolutionParameters struct. Description in the struct definition.
 	int nParents;

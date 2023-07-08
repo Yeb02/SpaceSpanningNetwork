@@ -84,6 +84,60 @@ Population::~Population() {
 	delete[] phylogeneticTree;
 }
 
+float evaluate(Network* n, float* X, float* Y) 
+{
+	float score = 0.0f;
+	for (int j = 0; j < N_YS; j++) {
+		for (int k = 0; k < n->outputSize; k++) 
+		{
+			Y[k] = NORMAL_01*.31f;
+		}
+
+		float dMin = (float)n->outputSize * 10.0f;
+		float d;
+		for (int k = 0; k < N_XS; k++) {
+			for (int l = 0; l < n->inputSize; l++) {
+				X[l] = NORMAL_01;
+			}
+
+			d = n->forward(X, Y, NO_GRAD);
+			if (d < dMin) {
+				dMin = d;
+			}
+		}
+		score -= dMin; // - because the higher the distance, the worst the net is.
+	}
+	return score / (float) N_YS;
+}
+
+void Population::test()
+{
+	int nTests = 100;
+
+	float* X = new float[networks[0]->inputSize];
+	float* Y = new float[networks[0]->outputSize];
+
+	float* s = new float[nTests];
+
+	float avg = 0.0f, var = 0.0f;
+	for (int i = 0; i < nTests; i++) {
+		s[i] = evaluate(networks[0], X, Y);
+		avg += s[i];
+	}
+	avg /= (float)nTests;
+	for (int i = 0; i < nTests; i++) {
+		var += powf(s[i] - avg, 2.0f);
+	}
+	var /= (float)nTests;
+	std::cout << "var: " << var << std::endl;
+	std::cout << "avg: " << avg << std::endl;
+
+	delete[] X;
+	delete[] Y;
+	delete[] s;
+}
+
+
 void Population::step() {
 	
 	float* X = new float[networks[0]->inputSize];
@@ -92,34 +146,14 @@ void Population::step() {
 
 	for (int i = 0; i < nSpecimens; i++) {
 		networks[i]->mutate();
-
-		rawScores[i] = 0.0f;
-		for (int j = 0; j < N_YS; j++) {
-			for (int k = 0; k < networks[0]->outputSize; k++) {
-				Y[k] = NORMAL_01;
-			}
-
-			float dMin = (float)networks[0]->outputSize * 10.0f; 
-			float d;
-			for (int k = 0; k < N_XS; k++) {
-				for (int l = 0; l < networks[0]->inputSize; l++) {
-					X[l] = NORMAL_01;
-				}
-
-				d = networks[i]->forward(X, Y, NO_GRAD);
-				if (d < dMin) {
-					dMin = d;
-				}
-			}
-			rawScores[i] -= dMin; // - because the higher the distance, the worst the net is.
-		}
+		rawScores[i] = evaluate(networks[i], X, Y);
 	}
 
 	delete[] X;
 	delete[] Y;
 
 
-	normalizeArray(rawScores.data(), fitnesses.data(), nSpecimens);
+	rankArray(rawScores.data(), fitnesses.data(), nSpecimens);
 
 	// logging scores. monitoring only, can be disabled.
 	if (true) {
@@ -210,23 +244,33 @@ Network* Population::createChild(PhylogeneticNode* primaryParent) {
 		return new Network(networks[parents[0]]);
 	}
 
-	// weights are an increasing function of the relative fitness.
-	{
-		rawWeights[0] = 1.0f;
-		float f0 = fitnesses[primaryParent->networkIndice];
-		
-		for (int i = 1; i < parents.size(); i++) {
-			rawWeights[i] *= (fitnesses[parents[i]] - f0); // TODO better
-		}
-	}
+	rawWeights[0] = 1.0f;
+	float f0 = fitnesses[primaryParent->networkIndice];
 
 	std::vector<Network*> parentNetworks;
+
+#ifdef SPARSE_MUT_AND_COMB
+	parentNetworks.push_back(networks[parents[0]]);
+	for (int i = 1; i < parents.size(); i++) {
+		if (fitnesses[parents[i]] > f0) {
+			parentNetworks.push_back(networks[parents[i]]);
+		}
+	}
+	if (parentNetworks.size() == 1) {
+		return new Network(networks[parents[0]]);
+	}
+#else
 	parentNetworks.resize(parents.size());
 	for (int i = 0; i < parents.size(); i++) {
 		parentNetworks[i] = networks[parents[i]];
 	}
+	for (int i = 1; i < parents.size(); i++) {
+		rawWeights[i] *= (fitnesses[parents[i]] - f0); // TODO better
+	}
+#endif
 	return Network::combine(parentNetworks, rawWeights.data());
 }
+
 
 void Population::createOffsprings() {
 	uint64_t start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
