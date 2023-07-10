@@ -5,11 +5,11 @@ We are trying to maximize the range of MLPs (tanh), at fixed topology. The range
 
 There are many possible measures of how good a certain range is. I opted for the following formal definition of the problem. We are looking for the set of weights and biases $\tilde{p}$ , that given :
 
-$NN_p :  \mathbb{R}^{d_{in}} \rightarrow  \mathbb{R}^{d_{out}}, \quad  d_{in} \ll d_{out} \newline$<br> 
-$Y \hookrightarrow \mathcal{N}(0,1)^{d_{out}} \newline$<br>
-$` n \in \N^*, \quad \forall i \in [1, n] \quad X_i \hookrightarrow \mathcal{N}(0,1)^{d_{in}}, \quad (X_i)_i \quad i.i.d.\newline `$<br>
+#### $NN_p :  \mathbb{R}^{d_{in}} \rightarrow  \mathbb{R}^{d_{out}}, \quad  d_{in} \ll d_{out} \newline$<br> 
+#### $Y \hookrightarrow \mathcal{N}(0,1)^{d_{out}} \newline$<br>
+#### $` n \in \mathbb{N}^*, \quad \forall i \in [1, n] \quad X_i \hookrightarrow \mathcal{N}(0,1)^{d_{in}}, \quad (X_i)_i \quad i.i.d.\newline `$<br>
 Satisfies:<br>
-$$` \tilde{p} \quad  =  \quad argmin_p[ \quad E_{Y}( \quad E_{(X_1,..X_n)}[ \quad min_{i\in[1,n]}( \quad ||NN_p(X_i) - Y||_2 \quad )])]`$$
+### $` \tilde{p} \quad  =  \quad argmin_p[ \quad E_{Y}( \quad E_{(X_1,..X_n)}[ \quad min_{i\in[1,n]}( \quad ||NN_p(X_i) - Y||_2 \quad )])]`$
 
 <br>
 
