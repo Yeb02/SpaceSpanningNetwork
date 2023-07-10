@@ -109,6 +109,8 @@ struct PhylogeneticNode
 	}
 };
 
+
+
 // A group of a fixed number of individuals, optimized with a genetic algorithm.
 class Population {
 
@@ -149,7 +151,6 @@ public:
 
 private:
 	float* datasetX, *datasetY;
-	float evaluateNetOnCloseness(Network* n, float* X, float* Y);
 	float evaluateNetOnDataset(Network* n);
 
 	//  = PhylogeneticNode[MAX_N_PARENTS][nSpecimens]

@@ -108,33 +108,6 @@ float Population::evaluateNetOnDataset(Network* n) {
 }
 
 
-float Population::evaluateNetOnCloseness(Network* n, float* X, float* Y) 
-{
-	float score = 0.0f;
-
-	for (int j = 0; j < N_YS; j++) {
-		for (int k = 0; k < n->outputSize; k++) 
-		{
-			Y[k] = NORMAL_01*.31f;
-		}
-
-		float dMin = (float)n->outputSize * 10.0f;
-		float d;
-		for (int k = 0; k < N_XS; k++) {
-			for (int l = 0; l < n->inputSize; l++) {
-				X[l] = NORMAL_01;
-			}
-
-			d = n->forward(X, Y, NO_GRAD);
-			if (d < dMin) {
-				dMin = d;
-			}
-		}
-		score -= dMin; // - because the higher the distance, the worst the net is.
-	}
-	return score / (float) N_YS;
-}
-
 void Population::test()
 {
 	int nTests = 20;
@@ -146,7 +119,7 @@ void Population::test()
 
 	float avg = 0.0f, var = 0.0f;
 	for (int i = 0; i < nTests; i++) {
-		s[i] = evaluateNetOnCloseness(networks[0], X, Y);
+		s[i] = networks[0]->evaluateOnCloseness( X, Y);
 		avg += s[i];
 	}
 	avg /= (float)nTests;
@@ -172,10 +145,9 @@ void Population::step() {
 	for (int i = 0; i < nSpecimens; i++) {
 		networks[i]->mutate();
 		rawScores[i] = evaluateNetOnDataset(networks[i]);
-		//rawScores[i] = evaluateNetOnCloseness(networks[i], X, Y);
+		//rawScores[i] = -networks[i]->evaluateOnCloseness(X, Y);
 	}
 
-	
 
 
 	rankArray(rawScores.data(), fitnesses.data(), nSpecimens);
@@ -195,12 +167,12 @@ void Population::step() {
 		float avgavgf = 0.0f;
 		for (float f : rawScores) avgavgf += f;
 		avgavgf /= (float) nSpecimens;
-		float bestC = evaluateNetOnCloseness(networks[maxScoreID], X, Y);
+		float bestC = networks[maxScoreID]->evaluateOnCloseness(X, Y);
 
 		std::cout << "At generation " << evolutionStep
 		<< ", max score = " << maxScore
 		<< ", average score per specimen = " << avgavgf << ".\n"
-		<< "Best specimen's space filling density: " <<
+		<< "SF(p*) " <<
 		bestC << std::endl;		
 	}
 

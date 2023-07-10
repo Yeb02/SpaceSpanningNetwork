@@ -2,6 +2,32 @@
 
 #include "Network.h"
 
+float Network::evaluateOnCloseness(float* X, float* Y)
+{
+	float score = 0.0f;
+
+	for (int j = 0; j < N_YS; j++) {
+		for (int k = 0; k < outputSize; k++)
+		{
+			Y[k] = std::clamp(NORMAL_01 * .3f, -1.0f, 1.0f);
+		}
+
+		float dMin = (float)outputSize * 10.0f;
+		float d;
+		for (int k = 0; k < N_XS; k++) {
+			for (int l = 0; l < inputSize; l++) {
+				X[l] = NORMAL_01;
+			}
+
+			d = forward(X, Y, NO_GRAD);
+			if (d < dMin) {
+				dMin = d;
+			}
+		}
+		score += dMin; 
+	}
+	return score / (float)N_YS;
+}
 
 Network::Network(int inputSize, int outputSize) :
 	inputSize(inputSize), outputSize(outputSize)
@@ -27,7 +53,8 @@ Network::Network(int inputSize, int outputSize) :
 		int sB = sizes[i + 1];
 		Bs.emplace_back(new float[sizes[i + 1]]);
 		for (int j = 0; j < sizes[i + 1]; j++) {
-			Bs[i][j] = NORMAL_01;
+			Bs[i][j] = .0f;
+			//Bs[i][j] = NORMAL_01;
 		}
 	}
 
@@ -89,7 +116,8 @@ float Network::forward(float* X, float* Y, bool accGrad)
 	float loss = 0.0f;
 	for (int i = 0; i < outputSize; i++) // euclidean distance loss
 	{
-		loss += powf(prevActs[i] - Y[i], 2.0f);
+		float l = powf(prevActs[i] - Y[i], 2.0f);
+		loss += l;
 	}
 
 	if (!accGrad) {
@@ -170,16 +198,14 @@ void Network::updateParams(float lr)
 	for (int i = 0; i < nLayers; i++)
 	{
 		int sW = sizes[i] * sizes[i + 1];
-		Ws.emplace_back(new float[sW]);
 		for (int j = 0; j < sW; j++) {
-			Ws[i][j] = WGrads[i][j] * lr;
+			Ws[i][j] -= WGrads[i][j] * lr;
 		}
 		std::fill(WGrads[i].get(), WGrads[i].get() + sW, 0.0f);
 
 		int sB = sizes[i + 1];
-		Bs.emplace_back(new float[sB]);
 		for (int j = 0; j < sB; j++) {
-			Bs[i][j] = BGrads[i][j] * lr;
+			Bs[i][j] -= BGrads[i][j] * lr;
 		}
 		std::fill(BGrads[i].get(), BGrads[i].get() + sB, 0.0f);
 	}
@@ -201,7 +227,7 @@ Network::Network(Network* n) : Network(n->inputSize, n->outputSize)
 
 void Network::mutate()
 {
-	constexpr float p = .2f;
+	constexpr float p = .1f;
 	int nMutations;
 
 	for (int i = 0; i < nLayers; i++)

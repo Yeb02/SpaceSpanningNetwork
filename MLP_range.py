@@ -9,18 +9,18 @@ from scipy.spatial import ConvexHull
 
 import sys
 
-inS = 10
-outS = 6
+inS = 5
+outS = 25
 
-interS = 64
+interS = 10
 
-nL = 1
+nL = 0
 
 bInit = .0
 
-batchS = 1
+batchS = 200
 
-lr = .01
+lr = .03
 
 class Net(nn.Module):
     def __init__(self):
@@ -41,67 +41,24 @@ class Net(nn.Module):
         out = self.layer(x)
         return out
 
-    
-def train(e, optimizer, model):
-    for i in range(e):
-        data = torch.Tensor(randn(batchS, inS))
-        target = torch.Tensor(randn(batchS, outS))
-
-        optimizer.zero_grad()
-        output = model(data)
-        loss = F.mse_loss(output, target)
-        loss.backward()
-        optimizer.step()
-        if i % 100 == 0:
-            # print('Train Epoch: {}, Loss: {:.6f}'.format(i,  loss.item()))
-            pass
 
 
-def computeVolume(model):
-    nPoints = 500 #arbitrary. Exponential ??
-    nComps = 5
-
-    v0 = 0
-    model.eval()
-    for j in range(nComps):
-      srcPoints = torch.Tensor(randn(nPoints, inS))
-      with torch.no_grad(): 
-        cloud = model(srcPoints)
-        v0 += ConvexHull(cloud.detach().numpy()).volume
-        
-    return v0 / nComps
 
 
 net = Net()
 optimizer = optim.Adadelta(net.parameters(), lr=lr)
 
-# three times to estimate variance
-print(computeVolume(net))
-print(computeVolume(net))
-print(computeVolume(net))
+data = torch.Tensor(randn(batchS, inS))
+target = torch.Tensor(randn(batchS, outS))
 
-train(200, optimizer, net)
-print(computeVolume(net))
+for i in range(20000):
 
-train(2000, optimizer, net)
-print(computeVolume(net))
-
-# a = torch.tensor([inS*[1]], dtype=torch.float32)
-# b = torch.tensor([inS*[-1]], dtype=torch.float32)
-# c = torch.tensor([inS*[0]], dtype=torch.float32)
-
-# print(net(a).data[0])
-# print(net(b).data[0])
-# print(net(c).data[0])
-
-# train(200, optimizer, net)
-
-# print(net(a).data[0])
-# print(net(b).data[0])
-# print(net(c).data[0])
-
-# train(2000, optimizer, net)
-
-# print(net(a).data[0])
-# print(net(b).data[0])
-# print(net(c).data[0])
+    optimizer.zero_grad()
+    output = net(data)
+    loss = F.mse_loss(output, target)
+    loss.backward()
+    if i % 100 == 0:
+        print('Train Epoch: {}, Loss: {:.6f}'.format(i,  loss.item()))
+        pass
+    optimizer.step()
+    

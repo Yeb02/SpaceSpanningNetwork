@@ -63,4 +63,6 @@ struct Network {
 	void mutate();
 
 	void save(std::ofstream& os) {};
+
+	float evaluateOnCloseness(float* X, float* Y);
 };

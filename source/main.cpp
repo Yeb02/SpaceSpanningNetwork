@@ -11,6 +11,7 @@ unsigned int fp_control_state = _controlfp(_EM_UNDERFLOW | _EM_INEXACT, _MCW_EM)
 #endif
 
 #include <iostream>
+#include <algorithm>
 #include "Population.h"
 #include "Random.h"
 
@@ -25,10 +26,62 @@ int main()
 {
     LOG("Seed : " << seed);
 
-    int nSpecimens = 512; //16 -> 512 in most cases
-    int nSteps = 10000;
     const int IN_SIZE = 5;
     const int OUT_SIZE = 25;
+
+
+    // Gradient based method:
+
+    if (false) {
+        float lr = .11f;
+
+        Network n(IN_SIZE, OUT_SIZE);
+
+        float* X = new float[IN_SIZE];
+        float* Y = new float[OUT_SIZE];
+
+        float* datasetY = new float[OUT_SIZE * N_YS];
+        for (int k = 0; k < OUT_SIZE * N_YS; k++)
+        {
+            datasetY[k] = clamp(NORMAL_01 * .3f, -1.0f, 1.0f);
+        }
+        float* datasetX = new float[IN_SIZE * N_YS];
+        for (int k = 0; k < IN_SIZE * N_YS; k++)
+        {
+            datasetX[k] = NORMAL_01;
+        }
+
+
+        for (int i = 0; i < 1000; i++)
+        {
+            // before GD to evaluate initial Net
+            float bestC = n.evaluateOnCloseness(X, Y);
+
+            float l = 0.0f;
+            for (int j = 0; j < N_YS; j++) {
+                l += n.forward(&datasetX[j * IN_SIZE], &datasetY[j * OUT_SIZE], true);
+                //n.updateParams(lr*.01f);
+            }
+            n.updateParams(lr / (float)N_YS);
+
+
+            std::cout << "Epoch " << i
+                << " loss " << l / (float)N_YS
+                << " SF(p) " <<
+                bestC << std::endl;
+        }
+
+        delete[] X;
+        delete[] Y;
+
+        return 0;
+    }
+
+    // Population based method :
+
+
+    int nSpecimens = 512; //16 -> 512 in most cases
+    int nSteps = 10000;
 
     PopulationEvolutionParameters params;
     params.selectionPressure = { -3.0f, .2f}; 
