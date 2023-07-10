@@ -79,7 +79,7 @@ Population::Population(int IN_SIZE, int OUT_SIZE, int nSpecimens) :
 	datasetY = new float[networks[0]->outputSize * N_YS];
 	for (int k = 0; k < networks[0]->outputSize * N_YS; k++)
 	{
-		datasetY[k] = NORMAL_01 * .31f;
+		datasetY[k] = std::clamp(NORMAL_01 * .3f, -1.0f, 1.0f);
 	}
 	datasetX = new float[networks[0]->inputSize * N_YS];
 	for (int k = 0; k < networks[0]->inputSize * N_YS; k++)

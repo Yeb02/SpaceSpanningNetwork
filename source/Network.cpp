@@ -227,7 +227,7 @@ Network::Network(Network* n) : Network(n->inputSize, n->outputSize)
 
 void Network::mutate()
 {
-	constexpr float p = .1f;
+	constexpr float p = .05f;
 	int nMutations;
 
 	for (int i = 0; i < nLayers; i++)

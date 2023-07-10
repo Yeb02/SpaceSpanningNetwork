@@ -60,6 +60,6 @@ As for the evolutionary process, we observe that as the loss on the dataset decr
  
 Zeroing the biases at initialization kickstarts the convergence for both methods but does not improve the end result.
 
-The final $SF$ is significatively better with GD than with GA : despite some finetuning, and the GA being much slower, the result were consistently separated by a gap: $SF_{GD} \approxeq 2.0, SF_{GA} \approxeq 2.5$ with a certain set of hyperparameters.
+The final $SF$ are similar with GD and GA, but the GA is much slower. Performances on the proxy task were much better with GD, but that is irrelevant here.
 
-Those results are satisfactory, but in the lack of theoretical studies of $SF$ 
+Those results are satisfactory, but in the lack of theoretical studies of $SF$ I do not know if this is close to the lower bound for $SF$, with a given set of hyperparameters and this inference structure (tanh MLP).
