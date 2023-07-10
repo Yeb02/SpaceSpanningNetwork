@@ -4,8 +4,8 @@
 
 #define CONSANGUINITY_DISTANCE 2
 
-#define N_YS 100//5000
+#define N_YS 500//5000
 
-#define N_XS 50//1 (be careful, increasing N_XS by design increases fitnesses.)
+#define N_XS 100//1 (be careful, increasing N_XS by design increases fitnesses.)
 
 #define NO_GRAD false

@@ -53,7 +53,7 @@ void rankArray(float* src, float* dst, int size) {
 }
 
 Population::Population(int IN_SIZE, int OUT_SIZE, int nSpecimens) :
-	nSpecimens(nSpecimens), fromDLL(fromDLL)
+	nSpecimens(nSpecimens)
 {
 	rawScores.resize(nSpecimens);
 	batchTransformedScores.resize(nSpecimens);
@@ -75,6 +75,17 @@ Population::Population(int IN_SIZE, int OUT_SIZE, int nSpecimens) :
 
 	fittestSpecimen = 0;
 	evolutionStep = 1; // starting at 1 is important for the phylogeneticTree.
+
+	datasetY = new float[networks[0]->outputSize * N_YS];
+	for (int k = 0; k < networks[0]->outputSize * N_YS; k++)
+	{
+		datasetY[k] = NORMAL_01 * .31f;
+	}
+	datasetX = new float[networks[0]->inputSize * N_YS];
+	for (int k = 0; k < networks[0]->inputSize * N_YS; k++)
+	{
+		datasetX[k] = NORMAL_01;
+	}
 }
 
 Population::~Population() {
@@ -82,11 +93,25 @@ Population::~Population() {
 		delete n;
 	}
 	delete[] phylogeneticTree;
+	delete[] datasetX;
+	delete[] datasetY;
 }
 
-float evaluate(Network* n, float* X, float* Y) 
+float Population::evaluateNetOnDataset(Network* n) {
+	
+	float score = 0.0f;
+
+	for (int j = 0; j < N_YS; j++) {
+		score -= n->forward(&datasetX[j*n->inputSize], &datasetY[j * n->outputSize], NO_GRAD); // - because the higher the distance, the worst the net is.
+	}
+	return score / (float)N_YS;
+}
+
+
+float Population::evaluateNetOnCloseness(Network* n, float* X, float* Y) 
 {
 	float score = 0.0f;
+
 	for (int j = 0; j < N_YS; j++) {
 		for (int k = 0; k < n->outputSize; k++) 
 		{
@@ -121,7 +146,7 @@ void Population::test()
 
 	float avg = 0.0f, var = 0.0f;
 	for (int i = 0; i < nTests; i++) {
-		s[i] = evaluate(networks[0], X, Y);
+		s[i] = evaluateNetOnCloseness(networks[0], X, Y);
 		avg += s[i];
 	}
 	avg /= (float)nTests;
@@ -146,11 +171,11 @@ void Population::step() {
 
 	for (int i = 0; i < nSpecimens; i++) {
 		networks[i]->mutate();
-		rawScores[i] = evaluate(networks[i], X, Y);
+		rawScores[i] = evaluateNetOnDataset(networks[i]);
+		//rawScores[i] = evaluateNetOnCloseness(networks[i], X, Y);
 	}
 
-	delete[] X;
-	delete[] Y;
+	
 
 
 	rankArray(rawScores.data(), fitnesses.data(), nSpecimens);
@@ -170,13 +195,17 @@ void Population::step() {
 		float avgavgf = 0.0f;
 		for (float f : rawScores) avgavgf += f;
 		avgavgf /= (float) nSpecimens;
+		float bestC = evaluateNetOnCloseness(networks[maxScoreID], X, Y);
+
 		std::cout << "At generation " << evolutionStep
 		<< ", max score = " << maxScore
-		<< ", average score per specimen = " << avgavgf << ".\n";
-
-
-		//Network* n = networks[maxScoreID];		
+		<< ", average score per specimen = " << avgavgf << ".\n"
+		<< "Best specimen's space filling density: " <<
+		bestC << std::endl;		
 	}
+
+	delete[] X;
+	delete[] Y;
 
 	createOffsprings();
 }
@@ -327,7 +356,7 @@ void Population::createOffsprings() {
 			nReconductedSpecimens++;
 		}
 	}
-	std::cout << "reconducted fraction : " << (float)nReconductedSpecimens / (float)nSpecimens << std::endl;
+	//std::cout << "reconducted fraction : " << (float)nReconductedSpecimens / (float)nSpecimens << std::endl;
 
 	// Compute probabilities for roulette wheel selection.
 	float invProbaSum = 0.0f;
@@ -373,5 +402,5 @@ void Population::createOffsprings() {
 	evolutionStep++;
 
 	uint64_t stop = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	std::cout << "Offspring creation took " << stop - start << " ms." << std::endl;
+	//std::cout << "Offspring creation took " << stop - start << " ms." << std::endl;
 }

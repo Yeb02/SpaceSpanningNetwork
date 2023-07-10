@@ -25,7 +25,7 @@ int main()
 {
     LOG("Seed : " << seed);
 
-    int nSpecimens = 128; //16 -> 512 in most cases
+    int nSpecimens = 512; //16 -> 512 in most cases
     int nSteps = 10000;
     const int IN_SIZE = 5;
     const int OUT_SIZE = 25;

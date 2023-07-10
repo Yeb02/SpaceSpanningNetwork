@@ -148,8 +148,9 @@ public:
 	int evolutionStep;
 
 private:
-
-	bool fromDLL;
+	float* datasetX, *datasetY;
+	float evaluateNetOnCloseness(Network* n, float* X, float* Y);
+	float evaluateNetOnDataset(Network* n);
 
 	//  = PhylogeneticNode[MAX_N_PARENTS][nSpecimens]
 	PhylogeneticNode* phylogeneticTree;

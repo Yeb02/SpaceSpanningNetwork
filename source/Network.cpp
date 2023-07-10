@@ -6,7 +6,7 @@
 Network::Network(int inputSize, int outputSize) :
 	inputSize(inputSize), outputSize(outputSize)
 {
-	nLayers = 1; // 1 if no hidden
+	nLayers = 2; // 1 if no hidden
 
 	sizes.push_back(inputSize);
 	for (int i = 0; i < nLayers - 1; i++) { // TODO
