@@ -137,7 +137,7 @@ float Population::evaluateNetOnCloseness(Network* n, float* X, float* Y)
 
 void Population::test()
 {
-	int nTests = 100;
+	int nTests = 20;
 
 	float* X = new float[networks[0]->inputSize];
 	float* Y = new float[networks[0]->outputSize];

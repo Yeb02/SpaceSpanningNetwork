@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Random.h"
+#include "config.h"
 
 #include <memory>
 #include <vector>

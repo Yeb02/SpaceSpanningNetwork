@@ -6,7 +6,7 @@
 Network::Network(int inputSize, int outputSize) :
 	inputSize(inputSize), outputSize(outputSize)
 {
-	nLayers = 2; // 1 if no hidden
+	nLayers = 1; // 1 if no hidden
 
 	sizes.push_back(inputSize);
 	for (int i = 0; i < nLayers - 1; i++) { // TODO
@@ -201,8 +201,7 @@ Network::Network(Network* n) : Network(n->inputSize, n->outputSize)
 
 void Network::mutate()
 {
-	constexpr float f = .3f;
-	constexpr float p = .1f;
+	constexpr float p = .2f;
 	int nMutations;
 
 	for (int i = 0; i < nLayers; i++)
@@ -214,20 +213,28 @@ void Network::mutate()
 		SET_BINOMIAL(sW, p);
 		nMutations = BINOMIAL;
 		for (int j = 0; j < nMutations; j++) {
-			Ws[i][INT_0X(sW)] += NORMAL_01;
+			//Ws[i][INT_0X(sW)] += NORMAL_01;
+			Ws[i][INT_0X(sW)] *= .9f + .1f * NORMAL_01;
+			Ws[i][INT_0X(sW)] += .3f * NORMAL_01;
 		}
 		SET_BINOMIAL(sB, p);
 		nMutations = BINOMIAL;
 		for (int j = 0; j < nMutations; j++) {
-			Bs[i][INT_0X(sB)] += NORMAL_01;
+			//Bs[i][INT_0X(sB)] += NORMAL_01;
+			Bs[i][INT_0X(sB)] *= .9f + .1f * NORMAL_01;
+			Bs[i][INT_0X(sB)] += .3f * NORMAL_01;
 		}
 #else
 		// Global
 		for (int j = 0; j < sB; j++) {
-			Bs[i][j] += f * NORMAL_01;
+			Bs[i][j] *= .95f + .1f* NORMAL_01;
+			Bs[i][j] += .2f* NORMAL_01;
+			//Bs[i][j] += .3f* NORMAL_01;
 		}
 		for (int j = 0; j < sW; j++) {
-			Ws[i][j] += f * NORMAL_01;
+			Ws[i][j] *= .95f + .1f * NORMAL_01;
+			Ws[i][j] += .2f * NORMAL_01;
+			//Ws[i][j] += .3f * NORMAL_01;
 		}
 #endif
 	}
