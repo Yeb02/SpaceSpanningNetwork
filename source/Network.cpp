@@ -32,7 +32,7 @@ float Network::evaluateOnCloseness(float* X, float* Y)
 Network::Network(int inputSize, int outputSize) :
 	inputSize(inputSize), outputSize(outputSize)
 {
-	nLayers = 1; // 1 if no hidden
+	nLayers = 2; // 1 if no hidden
 
 	sizes.push_back(inputSize);
 	for (int i = 0; i < nLayers - 1; i++) { // TODO
@@ -66,6 +66,9 @@ Network::Network(int inputSize, int outputSize) :
 		activationS += sizes[i];
 	}
 	activations = std::make_unique<float[]>(activationS);
+#ifdef SIN_ACTIVATION
+	preSynActs = std::make_unique<float[]>(activationS);
+#endif
 	delta = std::make_unique<float[]>(activationS - inputSize);
 
 
@@ -89,6 +92,11 @@ float Network::forward(float* X, float* Y, bool accGrad)
 {
 
 	// forward
+#ifdef SIN_ACTIVATION
+	float* currPreSynActs = &preSynActs[0];
+	std::copy(X, X + inputSize, currPreSynActs);
+	currPreSynActs += inputSize;
+#endif
 	float* prevActs = &activations[0];
 	std::copy(X, X + inputSize, prevActs);
 	float* currActs = &activations[inputSize];
@@ -106,14 +114,22 @@ float Network::forward(float* X, float* Y, bool accGrad)
 		}
 
 		for (int j = 0; j < sizes[i + 1]; j++) {
+#ifdef SIN_ACTIVATION
+			currPreSynActs[j] = currActs[j];
+			currActs[j] = sinf(currActs[j]); // Could be in the previous loop, but GPUisation.
+#else
 			currActs[j] = tanhf(currActs[j]); // Could be in the previous loop, but GPUisation.
+#endif
 		}
 
 		prevActs = currActs;
 		currActs = currActs + sizes[i + 1];
+#ifdef SIN_ACTIVATION
+		currPreSynActs += sizes[i + 1];
+#endif
 	}
 
-	float loss = 0.0f;
+	float loss = 0.0f; // -0.0498409458      0.328522801      0.497998476
 	for (int i = 0; i < outputSize; i++) // euclidean distance loss
 	{
 		float l = powf(prevActs[i] - Y[i], 2.0f);
@@ -124,14 +140,22 @@ float Network::forward(float* X, float* Y, bool accGrad)
 		return loss;
 	}
 
-	// backward. We will use tanh'(x) = 1 - tanh(x)², most stable and re-uses forward's calculations.
+	// backward. We will use tanh'(x) = 1 - tanh(x)², most stable and re-uses forward's calculations. 
+	// or if sine is used, sin'(x) = cos (not sqrt(1-sin²))
 	float* prevDelta;
 	float* currDelta = &delta[0];
 	currActs = prevActs;
+#ifdef SIN_ACTIVATION
+	currActs = currPreSynActs - sizes[nLayers]; // hacky workaround
+#endif
 	prevActs = currActs - sizes[nLayers - 1];
 	for (int i = 0; i < outputSize; i++) // euclidean distance loss
 	{
+#ifdef SIN_ACTIVATION
+		currDelta[i] = (currActs[i] - Y[i]) * cosf(currActs[i]);
+#else
 		currDelta[i] = (currActs[i] - Y[i]) * (1.0f - currActs[i] * currActs[i]);
+#endif
 	}
 
 	// w
@@ -169,7 +193,11 @@ float Network::forward(float* X, float* Y, bool accGrad)
 			matID += sizes[i];
 		}
 		for (int j = 0; j < sizes[i]; j++) {
+#ifdef SIN_ACTIVATION
+			currDelta[j] *= cosf(currActs[j]);
+#else
 			currDelta[j] *= (1.0f - currActs[j] * currActs[j]);
+#endif
 		}
 
 		// w
@@ -193,19 +221,19 @@ float Network::forward(float* X, float* Y, bool accGrad)
 }
 
 
-void Network::updateParams(float lr)
+void Network::updateParams(float lr, float regW, float regB)
 {
 	for (int i = 0; i < nLayers; i++)
 	{
 		int sW = sizes[i] * sizes[i + 1];
 		for (int j = 0; j < sW; j++) {
-			Ws[i][j] -= WGrads[i][j] * lr;
+			Ws[i][j] = Ws[i][j] * (1.0f - regW) - WGrads[i][j] * lr;
 		}
 		std::fill(WGrads[i].get(), WGrads[i].get() + sW, 0.0f);
 
 		int sB = sizes[i + 1];
 		for (int j = 0; j < sB; j++) {
-			Bs[i][j] -= BGrads[i][j] * lr;
+			Bs[i][j] = Bs[i][j] * (1.0f - regB) - BGrads[i][j] * lr;
 		}
 		std::fill(BGrads[i].get(), BGrads[i].get() + sB, 0.0f);
 	}

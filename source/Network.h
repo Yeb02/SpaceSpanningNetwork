@@ -27,10 +27,14 @@ struct Network {
 
 	// Layer by layer activations of the network. 
 	std::unique_ptr<float[]> activations;
+	
+#ifdef SIN_ACTIVATION
+	// Layer by layer pre synaptic activations of the network. (does include the input layer)
+	std::unique_ptr<float[]> preSynActs;
+#endif
 
 	// d(cost)/d(preSynAct).
 	std::unique_ptr<float[]> delta;
-
 
 	float* output;
 
@@ -56,7 +60,7 @@ struct Network {
 
 	float forward(float* X, float* Y, bool accGrad);
 
-	void updateParams(float lr);
+	void updateParams(float lr, float regW, float regB);
 
 	static Network* combine(std::vector<Network*>& parents, float* weights);
 

@@ -5,9 +5,6 @@ import torch.optim as optim
 
 from numpy.random import randn
 
-from scipy.spatial import ConvexHull
-
-import sys
 
 inS = 5
 outS = 25

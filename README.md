@@ -52,7 +52,7 @@ As the average fitness over the population increases, we observe a decrease of $
 
 ### B- Gradient descent
 
-We generate fixed dataset of $N$ couples $(X,Y)$, i.i.d. gaussian vectors, and apply gradient descent (full batch) to a randomly initialized network. 
+We a generate fixed dataset of $N$ couples $(X,Y)$, i.i.d. gaussian vectors, and apply gradient descent (full batch) to a randomly initialized network. 
 As for the evolutionary process, we observe that as the loss on the dataset decreases, so does $SF$. 
 
 
