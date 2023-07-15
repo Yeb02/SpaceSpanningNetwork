@@ -11,19 +11,20 @@ import sys
 
 import matplotlib.pyplot as plt
 
-inS = 4
-outS = 16
+inS = 1
+outS = 2
 
 interS = 32
 
 nL = 6
 
-batchS = 50
+batchS = 10
 
-lr = .01
+lr = .02
 
 nAnchors = 10
-anchorD = .5/math.sqrt(outS)
+# anchorD = .5/math.sqrt(outS)
+anchorD = .1
 
 class sine(Module):
     def forward(self, z):
@@ -64,9 +65,7 @@ def plot(net):
         x.append(r[0][0])
         y.append(r[0][1])
     
-    plt.xlim(-1,1)
-    plt.ylim(-1,1)
-    plt.plot(x,y,'o-')
+    
     plt.show()
 
 net = Net()
@@ -78,39 +77,101 @@ target = torch.clamp(torch.Tensor(randn(batchS, outS))*.3, -1, 1)
 
 def computeSF(net):
     net.eval()
-    nx = 100
-    ny = 200
+    nx = 20
+    ny = 500
     Y = torch.clamp(torch.Tensor(randn(ny, outS))*.3, -1, 1)
     
     s = 0
     for i in range(ny):
-        X = torch.Tensor(randn(nx, inS))
-        res = net(X)
-        y = Y[i]
-        dmin = outS * 100
-        for j in range(nx):
-            d = torch.norm(res[j] - y)**2
-            if d < dmin:
-                dmin = d
+        av = 0
+        for _ in range(1):
+            X = torch.Tensor(randn(nx, inS))
+            res = net(X)
+            y = Y[i]
+            dmin = outS * 100
+            for j in range(nx):
+                d = torch.norm(res[j] - y)**2
+                if d < dmin:
+                    dmin = d
+            av+=dmin
 
-        s += dmin
+        s += av/1
 
     return s.detach()/ny
+
+def visualizeStretch(net):
+    inputs = []
+    x = [0]*200
+    y = [0]*200
+    for i in range(-100, 100):
+        inputs.append(5 * (i/100)**5)
+        r = net(torch.tensor([[inputs[-1]]])).detach().numpy()
+        x[i+100] = r[0][0]
+        y[i+100] = r[0][1]
+
+    plt.plot(x, y, "g-")
+
+
+    Y = torch.Tensor([[.3, .3]])
+
+
+    Xs = torch.Tensor(randn(batchS, inS))
+        
+
+    with torch.no_grad():
+        bestXid = torch.argmin(torch.norm(net(Xs) - Y.repeat(batchS, 1), dim = 1))
+        X = Xs[bestXid][None, :]
+        anchors = torch.Tensor(randn(nAnchors, inS)) * anchorD + X.repeat(nAnchors, 1)
+        anchorsY = net(anchors)
+    print("language de merde")
+    
+    optimizer.zero_grad()
+    yn = net(X)
+    loss = F.mse_loss(yn, Y)
+    loss.backward()
+    lrFactor = loss.item() if loss.item() > 1 else loss.item()**2
+    optimizer.lr = lr * lrFactor 
+    optimizer.step()
+
+    for i in range(-100, 100):
+        r = net(torch.tensor([[inputs[-1]]])).detach().numpy()
+        x[i+100] = r[0][0]
+        y[i+100] = r[0][1]
+    plt.plot(x, y, "r-")
+    print("language de merde")
+
+    optimizer.zero_grad()
+    newAnchorsY = net(anchors)
+    loss = F.mse_loss(newAnchorsY, anchorsY)
+    loss.backward()
+    optimizer.lr = optimizer.lr / anchors.shape[0] # I should normalize the grad.
+    optimizer.step()
+
+    for i in range(-100, 100):
+        r = net(torch.tensor([[inputs[-1]]])).detach().numpy()
+        x[i+100] = r[0][0]
+        y[i+100] = r[0][1]
+    plt.plot(x, y, "b-")
+
+    plt.show()
 
 
 def trainStake(net):
     net.train()
+    
     SFs = []
     es = []
-    for i in range(50000):
+    for i in range(8000):
         Y = torch.clamp(torch.Tensor(randn(1, outS))*.3, -1, 1)
         Xs = torch.Tensor(randn(batchS, inS))
         
         with torch.no_grad():
             bestXid = torch.argmin(torch.norm(net(Xs) - Y.repeat(batchS, 1), dim = 1))
             X = Xs[bestXid][None, :]
-            # anchors = torch.Tensor(randn(nAnchors, inS)) * anchorD + X.repeat(nAnchors, 1)
-            # anchorsY = net(anchors)
+            # anchors = -X
+            # anchors = torch.Tensor(randn(nAnchors, inS))
+            anchors = torch.Tensor(randn(nAnchors, inS)) * anchorD + X.repeat(nAnchors, 1)
+            anchorsY = net(anchors)
 
         
         optimizer.zero_grad()
@@ -122,13 +183,13 @@ def trainStake(net):
         optimizer.step()
         
         
-        # optimizer.zero_grad()
-        # newAnchorsY = net(anchors)
-        # loss = F.mse_loss(newAnchorsY, anchorsY)
-        # loss.backward()
-        # # optimizer.lr = optimizer.lr / nAnchors # I should normalize the grad.
-        # optimizer.lr = optimizer.lr * .5
-        # optimizer.step()
+        optimizer.zero_grad()
+        newAnchorsY = net(anchors)
+        loss = F.mse_loss(newAnchorsY, anchorsY)
+        loss.backward()
+        optimizer.lr = optimizer.lr / anchors.shape[0] # I should normalize the grad.
+        # optimizer.lr = optimizer.lr 
+        optimizer.step()
 
         if i % 1000 == 0:
             es.append(i)
@@ -140,7 +201,7 @@ def trainStake(net):
     
 def trainRandom(net):
     net.train()
-    for i in range(10000):
+    for i in range(20000):
 
         optimizer.zero_grad()
         output = net(data)
@@ -151,13 +212,19 @@ def trainRandom(net):
             pass
         optimizer.step()
 
+
+# plt.xlim(-1,1)
+# plt.ylim(-1,1)
+
+visualizeStretch(net)
+
 print(computeSF(net))
 print(computeSF(net))
 print(computeSF(net))
 print(computeSF(net))
-# plot(net)
+plot(net)
 trainStake(net)
-# plot(net)
+plot(net)
 print(computeSF(net))
 print(computeSF(net))
 print(computeSF(net))
