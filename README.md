@@ -18,7 +18,7 @@ We will refer to the quantity in the $argmin_p$ as $SF(p)$, the Space Filling ca
 
 This expression means that for a *likely* $Y \in  \mathbb{R}^{d_{out}}$, the network $NN_{\tilde{p}}$  frequently outputs vectors close to $Y$ given *likely* inputs $X \in  \mathbb{R}^{d_{in}}$. The purpose of $n$ is to have both a "good coverage" of space with the $(X_1,..X_n)$, but also not to cover "too much" of it so that a vector $Y$ that the network can reach but rarely is penamizing in the measure. Taking $n = \infty$ provides good insights.  
 
-This investigation was motivated by the fact that as the number of layers of a randomly initialized* MLP grows, the output range shrinks, and quickly collapses to near 0 (i.e. $SF = +\infty$). This can be somewhat mitigated by zeroing the biases, but it is not sufficient. Explored methods are described in the next section.
+This investigation was motivated by the fact that as the number of layers of a randomly initialized* MLP grows, the output range shrinks, and quickly collapses to near 0 (i.e. $E_p(SF) = Cst(d_{out}) \gg \epsilon$ ). This can be somewhat mitigated by zeroing the biases, but it is not sufficient. Explored methods are described in the next section.
 
  (*) Like Xavier/Glorot init.
 
@@ -33,7 +33,7 @@ Two machine learning techniques are used: gradient descent on a single network a
 
 The consistency `(and probably the accuracy as it is unbiased (?), TODO check)` of this estimator is evaluated at each run by computing its variance over several measurements. Note that the expectation over the $X_i$, $E_{(X_1,..X_n)}$, is estimated with only one sample.
 
-Since the MLP's activation is tanh, its range is included within $[-1, 1]^{d_{out}}$. To compensate, the components of the gaussian vectors sampled in the output space (the Ys) are scaled by .3 and then clamped to [-1, 1].
+Since the MLP's output activation function is tanh, its maximal range is limited to $[-1, 1]^{d_{out}}$. To compensate, the components of the gaussian vectors sampled in the output space (the Ys) are scaled by .3 and then clamped to [-1, 1].
 
 ### A- Genetic algorithm
 
