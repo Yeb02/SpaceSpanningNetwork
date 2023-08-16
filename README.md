@@ -18,9 +18,11 @@ We will refer to the quantity in the $argmin_p$ as $SF(p)$, the Space Filling ca
 
 This expression means that for a *likely* $Y \in  \mathbb{R}^{d_{out}}$, the network $NN_{\tilde{p}}$  frequently outputs vectors close to $Y$ given *likely* inputs $X \in  \mathbb{R}^{d_{in}}$. The purpose of $n$ is to have both a "good coverage" of space with the $(X_1,..X_n)$, but also not to cover "too much" of it so that a vector $Y$ that the network can reach but rarely is penamizing in the measure. Taking $n = \infty$ provides good insights.  
 
-This investigation was motivated by the fact that as the number of layers of a randomly initialized* MLP grows, the output range shrinks, and quickly collapses to near 0 (i.e. $E_p(SF) = Cst(d_{out}) \gg \epsilon$ ). This can be somewhat mitigated by zeroing the biases, but it is not sufficient. Explored methods are described in the next section.
+This investigation was motivated by the fact that as the number of layers of a randomly initialized* MLP grows, the output range shrinks, and quickly collapses to near 0 (i.e. $E_p(SF) = Constant(d_{out}) \gg \epsilon$ ). This can be somewhat mitigated by zeroing the biases, but it is not sufficient. Explored methods are described in the next section.
 
- (*) Like Xavier/Glorot init.
+(*) Like Xavier/Glorot (in which case a decrease is to be expected), Kaiming, or normal initialization.
+
+There is another similar problem I am trying to solve: given an MLP architecture and an arbitrary probability distribution over the inputs, how to train a network with this architecture so that the output is a gaussian vector with mean 0 and variance 1, with identity covariance matrix. It is of course impossible in the general case, so we instead must try to minimize an objective function, something like  $KL(NN||\mathcal{N}(0,1)) + ||\Sigma_{NN}||$. Studying predictive coding could be fruitful.
 
 ## Results
 
