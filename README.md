@@ -22,7 +22,7 @@ This investigation was motivated by the fact that as the number of layers of a r
 
 (*) Like Xavier/Glorot (in which case a decrease is to be expected), Kaiming, or normal initialization.
 
-There is another similar problem I am trying to solve: given an MLP architecture and an arbitrary probability distribution over the inputs, how to train a network with this architecture so that the output is a gaussian vector with mean 0 and variance 1, with identity covariance matrix. It is of course impossible in the general case, so we instead must try to minimize an objective function, something like  $KL(NN||\mathcal{N}(0,1)) + ||\Sigma_{NN}||$. Studying predictive coding could be fruitful.
+There is another similar problem I am trying to solve: given an MLP architecture and an arbitrary probability distribution over the inputs, how to train a network with this architecture so that the output is a gaussian vector with mean 0 and variance 1, with identity covariance matrix. It is of course impossible in the general case, so we instead must try to minimize an objective function, something like  $KL(NN||\mathcal{N}(0,1)) + ||\Sigma_{NN}||$. Studying predictive coding and autoencoders could be fruitful.
 
 ## Results
 
@@ -54,7 +54,7 @@ As the average fitness over the population increases, we observe a decrease of $
 
 ### B- Gradient descent
 
-We a generate fixed dataset of $N$ couples $(X,Y)$, i.i.d. gaussian vectors, and apply gradient descent (full batch) to a randomly initialized network. 
+We generate a fixed dataset of $N$ couples $(X,Y)$, i.i.d. gaussian vectors, and apply gradient descent (full batch or inline yield the same results) to a randomly initialized network. 
 As for the evolutionary process, we observe that as the loss on the dataset decreases, so does $SF$. 
 
 
